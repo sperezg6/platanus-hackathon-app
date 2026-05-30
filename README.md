@@ -1,8 +1,10 @@
-<img src="./project-logo.png" alt="Timeless" width="160" />
+<p align="center">
+  <img src="./project-logo.png" alt="Timeless" width="120" />
+</p>
 
-# Timeless
+<h1 align="center">Timeless</h1>
 
-**AI browser agents that QA-test your web app in the cloud — watch them live.**
+<p align="center"><strong>AI browser agents that QA-test your web app in the cloud — watch them live.</strong></p>
 
 Companies register their app, describe a feature in natural language, and spin up
 AI **QA agents** that actually drive a real browser to test it — reporting
