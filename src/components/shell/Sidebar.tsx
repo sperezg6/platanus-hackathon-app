@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ChevronsUpDown, Moon, Sun, Orbit, X } from "lucide-react";
+import { ChevronsUpDown, Moon, Sun, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navFooter, navGroups } from "@/lib/nav";
 import { useShell } from "./ShellContext";
@@ -21,9 +21,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       {/* Brand */}
       <div className="flex h-16 items-center gap-2.5 px-5">
-        <span className="grid size-7 place-items-center rounded-md bg-ink text-cream">
-          <Orbit className="size-4" strokeWidth={2} />
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/timeless-mark.png"
+          alt="Timeless"
+          className="size-7 shrink-0 object-contain"
+        />
         <span className="text-[17px] font-bold tracking-tight">Timeless</span>
         <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-mute">
           QA
@@ -124,9 +127,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
         {/* Workspace card */}
         <button className="flex w-full items-center gap-2.5 rounded-md border border-line px-2 py-2 text-left transition-colors hover:bg-surface-2">
-          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-ink text-[11px] font-semibold text-cream">
-            TL
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/timeless-mark.png"
+            alt="Timeless"
+            className="size-7 shrink-0 rounded-md border border-line object-contain p-0.5"
+          />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium">Timeless</span>
             <span className="block truncate text-[11px] text-mute">Workspace demo</span>
