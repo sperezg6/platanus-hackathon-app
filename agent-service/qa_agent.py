@@ -108,6 +108,7 @@ def run_spec(sb, dp, region, browser_id, memory_id, run_spec, company_actor, ses
     step_ids = [r["id"] for r in sorted(inserted, key=lambda r: r["idx"])]
 
     outcome = "passed"
+    executed: list[dict] = []  # what the agent actually did, for the report
     ws_url, ws_headers = bc.generate_ws_headers()
     with sync_playwright() as p:
         browser = p.chromium.connect_over_cdp(ws_url, headers=ws_headers)
@@ -118,6 +119,7 @@ def run_spec(sb, dp, region, browser_id, memory_id, run_spec, company_actor, ses
             sb.table("run_steps").update({"status": "running", "started_at": _now()}).eq("id", step_ids[i]).execute()
             ok, log = run_one_step(page, step["description"], model_id, region)
             shot = _screenshot(page, sb, spec_id, i)
+            executed.append({"description": step["description"], "status": "passed" if ok else "failed", "log": log})
             if ok:
                 sb.table("run_steps").update({
                     "status": "passed", "ended_at": _now(), "screenshot_url": shot,
@@ -130,7 +132,18 @@ def run_spec(sb, dp, region, browser_id, memory_id, run_spec, company_actor, ses
                 break
 
     summary = "Todos los pasos aprobados" if outcome == "passed" else f"Terminó con estado {outcome}"
-    sb.table("run_specs").update({"status": outcome, "ended_at": _now(), "summary": summary}).eq("id", spec_id).execute()
+    sb.table("run_specs").update({
+        "status": outcome, "ended_at": _now(), "summary": summary,
+    }).eq("id", spec_id).execute()
+
+    # Detailed QA report (dev + product) — separate best-effort write so a missing
+    # `report` column (migration 0006 not yet applied) can't break the run.
+    report = generate_report(region, model_id, run_spec.get("title", "Caso de prueba"), executed, outcome)
+    if report:
+        try:
+            sb.table("run_specs").update({"report": report}).eq("id", spec_id).execute()
+        except Exception as e:
+            print(f"[report] store skipped: {e}")
 
     memory_record(dp, memory_id, company_actor, session_id,
                   f"Probé '{run_spec.get('title')}': resultado {outcome}.")
@@ -154,6 +167,52 @@ def run_spec(sb, dp, region, browser_id, memory_id, run_spec, company_actor, ses
 
 
 import re
+
+
+REPORT_PROMPT = """Eres un ingeniero de QA. Genera un informe claro y accionable de esta \
+ejecución de prueba, en español y en Markdown, útil tanto para el equipo de DESARROLLO \
+como para el de PRODUCTO. No inventes información: básate solo en los pasos y resultados dados.
+
+Caso de prueba: {title}
+Resultado final: {outcome}
+Pasos ejecutados:
+{steps}
+
+Usa exactamente estas secciones (omite "Hallazgo" si el resultado fue aprobado):
+## Resumen
+Una o dos frases en lenguaje de producto: qué se probó y el resultado.
+## Qué se validó
+Viñetas concretas de lo que el agente comprobó paso a paso.
+## Hallazgo
+- **Impacto (producto):** el efecto para el usuario/negocio.
+- **Detalle técnico (desarrollo):** dónde y por qué falló.
+- **Pasos para reproducir:** lista numerada.
+- **Evidencia:** el paso exacto y el mensaje observado.
+
+Sé conciso pero completo."""
+
+
+def generate_report(region: str, model_id: str, title: str, executed: list[dict], outcome: str) -> str | None:
+    """Ask the model for a detailed dev+product QA report of the run. Best-effort."""
+    if not executed:
+        return None
+    steps_txt = "\n".join(
+        f"{i + 1}. [{s['status']}] {s['description']}" + (f" — {s['log']}" if s.get("log") else "")
+        for i, s in enumerate(executed)
+    )
+    try:
+        rt = boto3.client("bedrock-runtime", region_name=region)
+        resp = rt.converse(
+            modelId=model_id,
+            messages=[{"role": "user", "content": [
+                {"text": REPORT_PROMPT.format(title=title, outcome=outcome, steps=steps_txt)},
+            ]}],
+            inferenceConfig={"maxTokens": 800, "temperature": 0.2},
+        )
+        return resp["output"]["message"]["content"][0]["text"].strip()
+    except Exception as e:
+        print(f"[report] generation skipped: {e}")
+        return None
 
 
 def run_one_step(page, instruction: str, model_id: str, region: str) -> tuple[bool, str | None]:

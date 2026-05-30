@@ -85,6 +85,7 @@ export type RunSpecRow = {
   live_view_url: string | null;
   replay_s3_key: string | null;
   summary: string | null;
+  report: string | null;
   started_at: string | null;
   ended_at: string | null;
 };
