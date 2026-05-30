@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./project-logo.png" alt="Timeless" width="120" />
+  <img src="./public/timeless-logo.png" alt="Timeless" width="120" />
 </p>
 
 <h1 align="center">Timeless</h1>

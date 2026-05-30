@@ -3,7 +3,6 @@ import {
   AppWindow,
   Bot,
   Building2,
-  HelpCircle,
   LayoutGrid,
   MonitorPlay,
   Settings,
@@ -55,5 +54,4 @@ export const navGroups: NavGroup[] = [
 
 export const navFooter: NavItem[] = [
   { label: "Configuración", href: "/settings", icon: Settings },
-  { label: "Centro de ayuda", href: "/help", icon: HelpCircle },
 ];
